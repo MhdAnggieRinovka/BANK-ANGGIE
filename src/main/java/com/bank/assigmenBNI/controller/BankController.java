@@ -30,9 +30,17 @@ public class BankController {
     }
 
     @PostMapping
-    public ResponseEntity<Bank> saveNewData(@RequestBody Bank bank){
-        Bank bankResult = bankService.createDataBank(bank);
-        return new ResponseEntity<>(bankResult, HttpStatus.OK);
+    public ResponseEntity<?> saveNewData(@RequestBody Bank bank){
+        if(bankService.isKtpExist(bank.getNo_ktp()))
+        {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body("Maaf, KTP " + bank.getNo_ktp() + " sudah terdaftar di sistem.");
+        }
+        else{
+            Bank bankResult = bankService.createDataBank(bank);
+            return new ResponseEntity<>(bankResult, HttpStatus.OK);
+        }
     }
 
     @PutMapping("/{id}")

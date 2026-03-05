@@ -26,7 +26,11 @@ public class BankServiceImpl implements BankService{
 
     @Override
     public Bank createDataBank(Bank bank) {
-        bankRepository.save(bank);
+        boolean existData = bankRepository.existsById(bank.getNo_ktp());
+        if(existData)
+        {
+            throw new RuntimeException("This No Ktp is alreadyExist");
+        }
         return bankRepository.save(bank);
     }
 
@@ -62,4 +66,10 @@ public class BankServiceImpl implements BankService{
     public void deleteDataBank(Long ktp) {
         bankRepository.deleteById(ktp);
     }
+
+    @Override
+    public boolean isKtpExist(Long ktp) {
+        return bankRepository.existsById(ktp);
+    }
+
 }

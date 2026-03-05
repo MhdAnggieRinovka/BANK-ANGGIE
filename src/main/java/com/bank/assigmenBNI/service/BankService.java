@@ -14,4 +14,6 @@ public interface BankService {
     Bank updateDataBank(Bank bank);
 
     void deleteDataBank(Long ktp);
+
+    boolean isKtpExist(Long ktp);
 }

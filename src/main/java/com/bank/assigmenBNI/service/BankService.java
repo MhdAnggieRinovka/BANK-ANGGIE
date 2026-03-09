@@ -7,13 +7,13 @@ import java.util.List;
 public interface BankService {
     List<Bank> findAllBank();
 
-    Bank findSpecificBank(Long ktp);
+    Bank findSpecificBank(String ktp);
 
     Bank createDataBank(Bank bank);
 
     Bank updateDataBank(Bank bank);
 
-    void deleteDataBank(Long ktp);
+    void deleteDataBank(String ktp);
 
-    boolean isKtpExist(Long ktp);
+    boolean isKtpExist(String ktp);
 }

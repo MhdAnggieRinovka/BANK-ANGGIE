@@ -1,53 +1,84 @@
 package com.bank.assigmenBNI.controller;
 
+import com.bank.assigmenBNI.Timer;
 import com.bank.assigmenBNI.model.Bank;
 import com.bank.assigmenBNI.repository.BankRepository;
 import com.bank.assigmenBNI.service.BankService;
 import com.bank.assigmenBNI.webResponseEntity.WebResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @AllArgsConstructor
+@Slf4j
 @RequestMapping("/api/bank")
 public class BankController {
     private BankService bankService;
+    private Timer timer;
 
     @GetMapping
     public ResponseEntity<WebResponse<List<Bank>>> getAllData() {
-        List<Bank> allData = bankService.findAllBank();
 
-        WebResponse<List<Bank>> webResponse = new WebResponse<>(
-                HttpStatus.OK.value(),
-                "Getting All Data Successfully",
-                allData
-        );
+        try {
+            timer.start();
+            List<Bank> allData = bankService.findAllBank();
+            log.info("Get All Data Bank "+ timer.stop());
+            WebResponse<List<Bank>> webResponse = new WebResponse<>(
+                    HttpStatus.OK.value(),
+                    "Getting All Data Successfully",
+                    allData
+            );
+            return ResponseEntity.ok(webResponse);
+        }catch (Exception e) {
+            log.error(new Date()+" Terjadi error ketika mendapatkan data: {}", e.getMessage());
 
-        return ResponseEntity.ok(webResponse);
+            WebResponse<List<Bank>> errorResponse = new WebResponse<>(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Internal Server Error: " + e.getMessage(),
+                    null
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     @PostMapping("/noKtp")
     public ResponseEntity<WebResponse<Bank>> getData(@RequestBody Map<String, String> Ktp){
-        Map<String,String> getValueKTP = Ktp;
-        Bank getData = bankService.findSpecificBank(getValueKTP.get("no_ktp"));
-        WebResponse<Bank> webResponse ;
-        if(getData==null)
-        {
-            webResponse = new WebResponse<>(HttpStatus.BAD_REQUEST.value(),"Data Doesnt Exist",getData);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(webResponse);
+            Map<String,String> getValueKTP = Ktp;
+            timer.start();
+            Bank getData = bankService.findSpecificBank(getValueKTP.get("no_ktp"));
+            log.info(" Getting Specific Data "+ timer.stop());
+            WebResponse<Bank> webResponse ;
+        try{
+            if(getData==null)
+            {
+                webResponse = new WebResponse<>(HttpStatus.BAD_REQUEST.value(),"Data Doesnt Exist",getData);
+                log.error(new Date()+" Mencari data pecific..... tidak ditemukan");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(webResponse);
+            };
+            webResponse = new WebResponse<>(HttpStatus.OK.value(),"Get Specific Data Successfull", getData);
+            return ResponseEntity.ok(webResponse);
+        }catch (Exception err){
+            log.error(new Date()+" Terjadi error ketika mendapatkan specific data: {}", err.getMessage());
+
+            WebResponse<Bank> errorResponse = new WebResponse<>(
+                    HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    "Internal Server Error: " + err.getMessage(),
+                    null
+            );
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-        webResponse = new WebResponse<>(HttpStatus.OK.value(),"Get Specific Data Successfull", getData);
-        return ResponseEntity.ok(webResponse);
     }
+
     @PostMapping
-    public ResponseEntity<WebResponse<Bank>> saveNewData(@RequestBody Bank bank) {
-        // 1. Validasi apakah KTP sudah ada
-        // isKtpExist sekarang menerima String
+    public ResponseEntity<WebResponse<Bank>> saveNewData(@Valid @RequestBody Bank bank) {
         if (bankService.isKtpExist(bank.getNoKtp())) {
             WebResponse<Bank> errorResponse = new WebResponse<>(
                     HttpStatus.BAD_REQUEST.value(),
@@ -56,11 +87,9 @@ public class BankController {
             );
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
-
-        // 2. Simpan data baru
+        timer.start();
         Bank bankResult = bankService.createDataBank(bank);
-
-        // 3. Bungkus hasil dalam WebResponse
+        log.info("Create Data Bank "+timer.stop());
         WebResponse<Bank> successResponse = new WebResponse<>(
                 HttpStatus.CREATED.value(), // Menggunakan 201 Created untuk data baru
                 "Data Bank Berhasil Disimpan",
@@ -77,7 +106,7 @@ public class BankController {
         return new ResponseEntity<>(updatedData, HttpStatus.OK);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/noKtp/{id}")
     public ResponseEntity<String> deleteDataBank(@PathVariable("id") String ktp){
         bankService.deleteDataBank(ktp);
         return new ResponseEntity<>("Your data has been deleted", HttpStatus.OK);

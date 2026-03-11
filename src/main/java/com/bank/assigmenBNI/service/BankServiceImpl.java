@@ -3,12 +3,14 @@ package com.bank.assigmenBNI.service;
 import com.bank.assigmenBNI.model.Bank;
 import com.bank.assigmenBNI.repository.BankRepository;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
-
+@Slf4j
 @Service
 @AllArgsConstructor
 public class BankServiceImpl implements BankService{
@@ -35,8 +37,6 @@ public class BankServiceImpl implements BankService{
 
     @Override
     public Bank updateDataBank(Bank bank) {
-        // Gunakan findByNoKtp. Karena findByNoKtp return Bank (bukan Optional),
-        // kita bungkus dengan Optional.ofNullable agar logic .map() tetap jalan.
         return Optional.ofNullable(bankRepository.findByNoKtp(bank.getNoKtp()))
                 .map(existingBank -> {
                     if (bank.getNama_lengkap() != null) existingBank.setNama_lengkap(bank.getNama_lengkap());
@@ -51,7 +51,15 @@ public class BankServiceImpl implements BankService{
     }
     @Override
     public void deleteDataBank(String ktp) {
-        bankRepository.deleteByNoKtp(ktp);
+        if(bankRepository.existsByNoKtp(ktp))
+        {
+            bankRepository.deleteByNoKtp(ktp);
+            log.info( new Date() +" Data berhasil di delete");
+        }
+        else
+        {
+            log.error( new Date() +" Data yang akan didelete tidak ditemukan");
+        }
     }
 
     @Override

@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
 
         WebResponse<String> response = WebResponse.<String>builder()
                 .status_code(HttpStatus.BAD_REQUEST.value())
-                .message(errorMessage) // Pesan jadi dinamis sekarang
+                .message(errorMessage)
                 .data(null)
                 .build();
 

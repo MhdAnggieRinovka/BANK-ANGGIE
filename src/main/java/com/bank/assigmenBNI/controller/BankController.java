@@ -5,6 +5,7 @@ import com.bank.assigmenBNI.model.Bank;
 import com.bank.assigmenBNI.repository.BankRepository;
 import com.bank.assigmenBNI.service.BankService;
 import com.bank.assigmenBNI.webResponseEntity.WebResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +55,7 @@ public class BankController {
             Map<String,String> getValueKTP = Ktp;
             timer.start();
             Bank getData = bankService.findSpecificBank(getValueKTP.get("no_ktp"));
-            log.info(" Getting Specific Data "+ timer.stop());
+            log.info("Getting Specific Data "+ timer.stop());
             WebResponse<Bank> webResponse ;
         try{
             if(getData==null)
@@ -78,7 +79,8 @@ public class BankController {
     }
 
     @PostMapping
-    public ResponseEntity<WebResponse<Bank>> saveNewData(@Valid @RequestBody Bank bank) {
+    public ResponseEntity<WebResponse<Bank>> saveNewData(@Valid @RequestBody Bank bank, HttpServletRequest request) {
+        request.setAttribute("startTime", System.currentTimeMillis());
         if (bankService.isKtpExist(bank.getNoKtp())) {
             WebResponse<Bank> errorResponse = new WebResponse<>(
                     HttpStatus.BAD_REQUEST.value(),
@@ -101,14 +103,18 @@ public class BankController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Bank> updateData(@PathVariable("id") String ktp,@RequestBody Bank bank){
+        timer.start();
         bank.setNoKtp(ktp);
         Bank updatedData = bankService.updateDataBank(bank);
+        log.info("Update Data "+timer.stop());
         return new ResponseEntity<>(updatedData, HttpStatus.OK);
     }
 
     @DeleteMapping("/noKtp/{id}")
     public ResponseEntity<String> deleteDataBank(@PathVariable("id") String ktp){
+        timer.start();
         bankService.deleteDataBank(ktp);
+        log.info("Delete Data "+timer.stop());
         return new ResponseEntity<>("Your data has been deleted", HttpStatus.OK);
     }
 }

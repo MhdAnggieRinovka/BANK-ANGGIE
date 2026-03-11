@@ -1,6 +1,7 @@
 package com.bank.assigmenBNI.exceptionHandler;
 
 import com.bank.assigmenBNI.webResponseEntity.WebResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.client.RestClient;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.StringJoiner;
 
 @Slf4j
 @RestControllerAdvice
@@ -25,32 +27,47 @@ public class GlobalExceptionHandler {
         this.builder = builder;
     }
 
-    // Menangani error format JSON (termasuk tanggal yang salah format)
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<WebResponse<String>> handleInvalidFormat(HttpMessageNotReadableException ex) {
+    public ResponseEntity<WebResponse<String>> handleInvalidFormat(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        Long start = (Long) request.getAttribute("startTime");
+        long duration = (start != null) ? (System.currentTimeMillis() - start) : 0;
+
+        String errorMessage = "Format JSON tidak valid atau Body kosong";
+
+        if (ex.getMessage() != null && ex.getMessage().contains("Date")) {
+            errorMessage = "Format tanggal salah. Gunakan yyyy-MM-dd (ex: 2026-03-10)";
+        } else if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
+            errorMessage = "Body request tidak boleh kosong!";
+        }
+
         WebResponse<String> response = WebResponse.<String>builder()
                 .status_code(HttpStatus.BAD_REQUEST.value())
-                .message("Format benar adalah yyyy-MM-dd (ex : 2026-03-10).")
+                .message(errorMessage) // Pesan jadi dinamis sekarang
                 .data(null)
                 .build();
-        log.error(new Date()+ " Format Tanggal Salah yyyy-MM-dd"+" "+ HttpStatus.BAD_REQUEST.value());
+
+        log.error("JSON Error: {} | Duration: {}ms", errorMessage, duration);
         return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<WebResponse<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<WebResponse<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, String> errors = new HashMap<>();
+        Long start = (Long) request.getAttribute("startTime");
+        long duration = (start != null) ? (System.currentTimeMillis() - start) : 0;
+        StringJoiner joiner = new StringJoiner(", ");
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
-            log.error(new Date()+ " Create Data Failed: "+ fieldName+ " "+ errorMessage + " "+ HttpStatus.BAD_REQUEST.value());
+            joiner.add(errorMessage);
+            log.error("Create Data Failed: {} {} {}ms",fieldName,errorMessage,duration);
         });
 
         WebResponse<Map<String, String>> response = new WebResponse<>(
                 HttpStatus.BAD_REQUEST.value(),
-                "Validasi Gagal",
-                errors
+                "Validasi Gagal: "+ joiner.toString(),
+                null
         );
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }

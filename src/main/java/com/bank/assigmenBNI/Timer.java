@@ -6,14 +6,13 @@ import org.springframework.stereotype.Component;
 public class Timer {
     private long startTime;
 
-    // Method untuk mulai hitung
     public void start() {
-        this.startTime = System.currentTimeMillis();
+        this.startTime = System.nanoTime();
     }
 
-    // Method untuk stop dan dapatkan selisih waktunya dalam format string
     public String stop() {
-        long duration = System.currentTimeMillis() - this.startTime;
-        return duration + " ms";
+        long endTime = System.nanoTime();
+        double duration = (endTime - this.startTime) / 1_000_000.0;
+        return String.format("%.3f ms", duration);
     }
 }
